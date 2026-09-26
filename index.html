@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>A Day in a Tiny City</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700;800&family=Inter:wght@400;500;600;700&family=Noto+Sans+Khmer:wght@400;600;700&family=Noto+Sans+SC:wght@400;600;700&family=Noto+Sans+JP:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root{
+    --ink:#0B1220;
+    --ink-2:#0F1729;
+    --paper:#F5F1E8;
+    --amber:#FF9E5E;
+    --amber-dim:#B4693A;
+    --teal:#4FD1C5;
+    --glass:rgba(245,241,232,0.07);
+    --glass-border:rgba(245,241,232,0.14);
+    box-sizing:border-box;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  html{scroll-behavior:smooth;scroll-padding-top:env(safe-area-inset-top,0px);}
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:var(--ink);
+    color:var(--paper);
+    font-family:'Inter',sans-serif;
+    overflow-x:hidden;
+  }
+  h1,h2,h3,.display{font-family:'Unbounded',sans-serif;}
+  [lang="km"], .lang-km{font-family:'Noto Sans Khmer','Inter',sans-serif;}
+  [lang="zh"], .lang-zh{font-family:'Noto Sans SC','Inter',sans-serif;}
+  [lang="ja"], .lang-ja{font-family:'Noto Sans JP','Inter',sans-serif;}
+
+  .glass{
+    background:var(--glass);
+    border:1px solid var(--glass-border);
+    backdrop-filter:blur(18px) saturate(140%);
+    -webkit-backdrop-filter:blur(18px) saturate(140%);
+  }
+  .btn{
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    border-radius:999px;
+    padding:0.7rem 1.4rem;
+    transition:transform .18s ease, background .18s ease, box-shadow .18s ease;
+    cursor:pointer;
+    border:1px solid var(--glass-border);
+  }
+  .btn:hover{transform:translateY(-1px);}
+  .btn:focus-visible, button:focus-visible, a:focus-visible, input:focus-visible{
+    outline:2px solid var(--teal);
+    outline-offset:2px;
+  }
+  .btn-primary{
+    background:linear-gradient(135deg,var(--amber),var(--amber-dim));
+    color:#1A0F08;
+    box-shadow:0 8px 24px rgba(255,158,94,0.25);
+  }
+  .btn-ghost{background:var(--glass);color:var(--paper);}
+  .btn-ghost:hover{background:rgba(245,241,232,0.13);}
+
+  #hero{position:relative;width:100%;height:100svh;min-height:560px;overflow:hidden;}
+  #city-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;}
+  #hero-copy{position:absolute;left:0;right:0;top:0;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;padding:0 1.25rem;pointer-events:none;}
+  #hero-copy > *{pointer-events:auto;}
+
+  #navbar{
+    position:fixed;top:calc(0.9rem + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);
+    z-index:40;width:min(1100px,94vw);
+    border-radius:999px;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:0.55rem 0.6rem 0.55rem 1.1rem;
+    transition:background .25s ease, border-color .25s ease;
+  }
+  #navbar.scrolled{background:rgba(11,18,32,0.72);}
+  .nav-link{opacity:0.85;font-weight:500;font-size:0.92rem;transition:opacity .15s;}
+  .nav-link:hover{opacity:1;}
+
+  #mobile-menu{position:fixed;inset:0;z-index:50;background:rgba(11,18,32,0.97);display:none;flex-direction:column;align-items:center;justify-content:center;gap:1.6rem;}
+  #mobile-menu.open{display:flex;}
+
+  #loading-screen{
+    position:fixed;inset:0;z-index:100;background:var(--ink);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;
+    transition:opacity .6s ease, visibility .6s ease;
+  }
+  #loading-screen.hidden{opacity:0;visibility:hidden;pointer-events:none;}
+  .load-bar-track{width:min(280px,70vw);height:3px;background:rgba(245,241,232,0.15);border-radius:2px;overflow:hidden;}
+  .load-bar-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--amber),var(--teal));transition:width .18s ease;}
+
+  #time-dock{
+    position:fixed;left:50%;bottom:calc(1rem + env(safe-area-inset-bottom,0px));transform:translateX(-50%);
+    z-index:35;width:min(720px,94vw);border-radius:24px;padding:0.9rem 1.1rem 1rem;
+  }
+  #timeline-range{-webkit-appearance:none;appearance:none;width:100%;height:4px;border-radius:4px;background:rgba(245,241,232,0.18);outline:none;}
+  #timeline-range::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--amber);cursor:pointer;box-shadow:0 0 0 4px rgba(255,158,94,0.2);}
+  #timeline-range::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--amber);border:none;cursor:pointer;}
+
+  .speed-btn.active{background:rgba(255,158,94,0.22);border-color:var(--amber);}
+  .icon-btn{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+
+  #building-info{
+    position:fixed;z-index:36;width:min(300px,86vw);border-radius:18px;padding:1.1rem 1.2rem;
+    top:calc(5.2rem + env(safe-area-inset-top,0px));right:1rem;
+    transform:translateY(-12px);opacity:0;pointer-events:none;transition:transform .25s ease, opacity .25s ease;
+  }
+  #building-info.show{transform:translateY(0);opacity:1;pointer-events:auto;}
+
+  #side-controls{position:fixed;z-index:34;right:1rem;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:0.6rem;}
+
+  .stat-num{font-family:'Unbounded',sans-serif;font-size:clamp(2rem,5vw,3.2rem);}
+  .district-card{border-radius:22px;cursor:pointer;transition:transform .2s ease, border-color .2s ease;}
+  .district-card:hover{transform:translateY(-4px);border-color:rgba(255,158,94,0.5);}
+  .tech-badge{border-radius:999px;padding:0.35rem 0.85rem;font-size:0.8rem;border:1px solid var(--glass-border);}
+
+  ::-webkit-scrollbar{width:10px;}
+  ::-webkit-scrollbar-thumb{background:rgba(245,241,232,0.18);border-radius:6px;}
+
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    *{animation-duration:0.001ms !important; transition-duration:0.001ms !important;}
+  }
+  .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;}
+</style>
+</head>
+<body>
+
+<div id="loading-screen">
+  <div class="display" style="font-size:1.6rem;letter-spacing:0.02em;">TINY CITY</div>
+  <div class="load-bar-track"><div class="load-bar-fill" id="load-bar"></div></div>
+  <div id="load-label" style="font-size:0.85rem;opacity:0.7;">Building the city… 0%</div>
+</div>
+
+<nav id="navbar" class="glass">
+  <div style="display:flex;align-items:center;gap:0.6rem;">
+    <span style="font-size:1.2rem;">🏙️</span>
+    <span class="display" style="font-size:1rem;font-weight:700;">Tiny City</span>
+  </div>
+  <div class="hidden md:flex" style="align-items:center;gap:1.6rem;">
+    <a href="#hero" class="nav-link" data-i18n="nav.home">Home</a>
+    <a href="#districts" class="nav-link" data-i18n="nav.explore">Explore</a>
+    <a href="#about" class="nav-link" data-i18n="nav.about">About</a>
+  </div>
+  <div style="display:flex;align-items:center;gap:0.5rem;">
+    <div class="relative">
+      <button id="lang-btn" class="btn btn-ghost" style="padding:0.45rem 0.8rem;font-size:0.85rem;display:flex;align-items:center;gap:0.35rem;" aria-haspopup="true" aria-expanded="false">
+        <span id="lang-flag">🇬🇧</span><span id="lang-label">EN</span>
+      </button>
+      <div id="lang-menu" class="glass hidden" style="position:absolute;right:0;top:calc(100% + 0.5rem);border-radius:14px;overflow:hidden;min-width:160px;">
+        <button class="lang-option" data-lang="en" style="display:flex;width:100%;gap:0.5rem;padding:0.6rem 0.9rem;text-align:left;">🇬🇧 English</button>
+        <button class="lang-option" data-lang="km" style="display:flex;width:100%;gap:0.5rem;padding:0.6rem 0.9rem;text-align:left;">🇰🇭 ខ្មែរ</button>
+        <button class="lang-option" data-lang="zh" style="display:flex;width:100%;gap:0.5rem;padding:0.6rem 0.9rem;text-align:left;">🇨🇳 中文</button>
+        <button class="lang-option" data-lang="ja" style="display:flex;width:100%;gap:0.5rem;padding:0.6rem 0.9rem;text-align:left;">🇯🇵 日本語</button>
+      </div>
+    </div>
+    <button id="start-exploring-nav" class="btn btn-primary hidden sm:inline-block" style="font-size:0.82rem;padding:0.5rem 1rem;" data-i18n="nav.startExploring">Start Exploring</button>
+    <button id="hamburger" class="icon-btn btn-ghost md:hidden" aria-label="Open menu">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+  </div>
+</nav>
+
+<div id="mobile-menu">
+  <a href="#hero" class="nav-link" style="font-size:1.4rem;" data-i18n="nav.home">Home</a>
+  <a href="#districts" class="nav-link" style="font-size:1.4rem;" data-i18n="nav.explore">Explore</a>
+  <a href="#about" class="nav-link" style="font-size:1.4rem;" data-i18n="nav.about">About</a>
+  <button id="close-mobile-menu" class="btn btn-ghost" style="margin-top:1rem;">✕</button>
+</div>
+
+<section id="hero">
+  <canvas id="city-canvas" role="img" aria-label="Interactive 3D miniature city"></canvas>
+
+  <div id="hero-copy">
+    <h1 class="display" style="font-size:clamp(2.2rem,6vw,4.2rem);font-weight:700;text-shadow:0 4px 30px rgba(0,0,0,0.5);max-width:16ch;" data-i18n="hero.title">A Day in a Tiny City</h1>
+    <p style="max-width:34ch;margin-top:0.9rem;font-size:clamp(1rem,2vw,1.15rem);opacity:0.88;text-shadow:0 2px 14px rgba(0,0,0,0.5);" data-i18n="hero.subtitle">Watch a miniature world come alive from sunrise to midnight.</p>
+    <div style="display:flex;gap:0.8rem;margin-top:1.6rem;flex-wrap:wrap;justify-content:center;">
+      <button id="explore-city-btn" class="btn btn-primary" data-i18n="hero.explore">Explore the City</button>
+      <button id="watch-day-btn" class="btn btn-ghost glass" data-i18n="hero.watchDay">Watch the Day</button>
+    </div>
+  </div>
+
+  <div id="side-controls">
+    <button id="weather-toggle" class="icon-btn glass" title="Weather" aria-label="Toggle weather">☀️</button>
+    <button id="sound-toggle" class="icon-btn glass" title="Sound" aria-label="Toggle sound">🔇</button>
+  </div>
+
+  <div id="building-info" class="glass" role="dialog" aria-label="Building information">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+      <h3 id="bi-name" class="display" style="font-size:1.1rem;"></h3>
+      <button id="bi-close" aria-label="Close" style="opacity:0.7;font-size:1.1rem;line-height:1;">✕</button>
+    </div>
+    <div style="margin-top:0.7rem;display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;font-size:0.85rem;">
+      <div><div style="opacity:0.6;" data-i18n="building.type">Type</div><div id="bi-type" style="font-weight:600;"></div></div>
+      <div><div style="opacity:0.6;" data-i18n="building.height">Height</div><div id="bi-height" style="font-weight:600;"></div></div>
+      <div><div style="opacity:0.6;" data-i18n="building.people">People</div><div id="bi-people" style="font-weight:600;"></div></div>
+      <div><div style="opacity:0.6;" data-i18n="building.hours">Hours</div><div id="bi-hours" style="font-weight:600;"></div></div>
+    </div>
+  </div>
+
+  <div id="time-dock" class="glass">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.4rem;">
+      <div style="display:flex;align-items:center;gap:0.5rem;">
+        <span id="phase-emoji" style="font-size:1.3rem;">🌅</span>
+        <span id="phase-label" style="font-weight:600;font-size:0.95rem;" data-i18n="phase.sunrise">Sunrise</span>
+      </div>
+      <div id="clock-display" class="display" style="font-size:1.15rem;">06:00 AM</div>
+    </div>
+    <input id="timeline-range" type="range" min="6" max="24" step="0.05" value="6" style="margin-top:0.7rem;" aria-label="Time of day">
+    <div style="display:flex;justify-content:space-between;font-size:0.68rem;opacity:0.55;margin-top:0.2rem;">
+      <span>06:00</span><span>12:00</span><span>18:00</span><span>24:00</span>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:0.7rem;gap:0.5rem;flex-wrap:wrap;">
+      <div style="display:flex;gap:0.4rem;">
+        <button id="play-btn" class="icon-btn btn-ghost" aria-label="Play">▶️</button>
+        <button id="restart-btn" class="icon-btn btn-ghost" aria-label="Restart">⏮️</button>
+      </div>
+      <div style="display:flex;gap:0.35rem;">
+        <button class="speed-btn btn btn-ghost active" data-speed="1" style="padding:0.35rem 0.6rem;font-size:0.75rem;">×1</button>
+        <button class="speed-btn btn btn-ghost" data-speed="2" style="padding:0.35rem 0.6rem;font-size:0.75rem;">×2</button>
+        <button class="speed-btn btn btn-ghost" data-speed="4" style="padding:0.35rem 0.6rem;font-size:0.75rem;">×4</button>
+      </div>
+      <div id="camera-presets" style="display:flex;gap:0.35rem;flex-wrap:wrap;">
+        <select id="preset-select" class="btn btn-ghost" style="padding:0.35rem 0.6rem;font-size:0.75rem;background:rgba(11,18,32,0.6);color:var(--paper);">
+          <option value="city" data-i18n="camera.city">City View</option>
+          <option value="downtown" data-i18n="camera.downtown">Downtown</option>
+          <option value="residential" data-i18n="camera.residential">Residential Area</option>
+          <option value="shopping" data-i18n="camera.shopping">Shopping District</option>
+          <option value="park" data-i18n="camera.park">Central Park</option>
+          <option value="restaurant" data-i18n="camera.restaurant">Restaurant Street</option>
+          <option value="night" data-i18n="camera.night">Night View</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="stats" style="padding:5rem 1.5rem;text-align:center;">
+  <div style="max-width:1000px;margin:0 auto;display:grid;grid-template-columns:repeat(2,1fr);gap:2.2rem;">
+    <div><div class="stat-num" data-target="247" data-value="0">0</div><div style="opacity:0.7;font-size:0.9rem;margin-top:0.3rem;" data-i18n="stats.buildings">Buildings</div></div>
+    <div><div class="stat-num" data-target="1284" data-value="0">0</div><div style="opacity:0.7;font-size:0.9rem;margin-top:0.3rem;" data-i18n="stats.people">People</div></div>
+    <div><div class="stat-num" data-target="326" data-value="0">0</div><div style="opacity:0.7;font-size:0.9rem;margin-top:0.3rem;" data-i18n="stats.vehicles">Vehicles</div></div>
+    <div><div class="stat-num" data-target="48" data-value="0">0</div><div style="opacity:0.7;font-size:0.9rem;margin-top:0.3rem;" data-i18n="stats.shops">Shops</div></div>
+  </div>
+  <div style="margin-top:1.8rem;"><div class="stat-num" data-target="12" data-value="0">0</div><div style="opacity:0.7;font-size:0.9rem;margin-top:0.3rem;" data-i18n="stats.parks">Parks</div></div>
+</section>
+
+<section id="districts" style="padding:2rem 1.5rem 5rem;max-width:1100px;margin:0 auto;">
+  <h2 class="display" style="font-size:clamp(1.6rem,3.5vw,2.4rem);text-align:center;margin-bottom:2.2rem;" data-i18n="districts.title">Explore the City</h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:1.1rem;">
+    <div class="district-card glass" data-preset="downtown" style="padding:1.6rem;grid-column:span 2;">
+      <div style="font-size:1.8rem;">🏙️</div>
+      <h3 class="display" style="font-size:1.15rem;margin-top:0.6rem;" data-i18n="districts.downtown.name">Downtown</h3>
+      <p style="opacity:0.75;font-size:0.88rem;margin-top:0.4rem;" data-i18n="districts.downtown.desc">Skyscrapers, offices, traffic and busy streets.</p>
+    </div>
+    <div class="district-card glass" data-preset="residential" style="padding:1.6rem;">
+      <div style="font-size:1.8rem;">🏘️</div>
+      <h3 class="display" style="font-size:1.15rem;margin-top:0.6rem;" data-i18n="districts.residential.name">Residential Area</h3>
+      <p style="opacity:0.75;font-size:0.88rem;margin-top:0.4rem;" data-i18n="districts.residential.desc">Apartments, houses, schools and parks.</p>
+    </div>
+    <div class="district-card glass" data-preset="shopping" style="padding:1.6rem;">
+      <div style="font-size:1.8rem;">🛍️</div>
+      <h3 class="display" style="font-size:1.15rem;margin-top:0.6rem;" data-i18n="districts.shopping.name">Shopping District</h3>
+      <p style="opacity:0.75;font-size:0.88rem;margin-top:0.4rem;" data-i18n="districts.shopping.desc">Stores, cafés, restaurants and pedestrians.</p>
+    </div>
+    <div class="district-card glass" data-preset="restaurant" style="padding:1.6rem;">
+      <div style="font-size:1.8rem;">🍜</div>
+      <h3 class="display" style="font-size:1.15rem;margin-top:0.6rem;" data-i18n="districts.restaurant.name">Restaurant Street</h3>
+      <p style="opacity:0.75;font-size:0.88rem;margin-top:0.4rem;" data-i18n="districts.restaurant.desc">Food shops, outdoor seating and nightlife.</p>
+    </div>
+    <div class="district-card glass" data-preset="park" style="padding:1.6rem;grid-column:span 2;">
+      <div style="font-size:1.8rem;">🌳</div>
+      <h3 class="display" style="font-size:1.15rem;margin-top:0.6rem;" data-i18n="districts.park.name">Central Park</h3>
+      <p style="opacity:0.75;font-size:0.88rem;margin-top:0.4rem;" data-i18n="districts.park.desc">Trees, fountains, walking paths and relaxing areas.</p>
+    </div>
+  </div>
+</section>
+
+<section id="about" style="padding:2rem 1.5rem 6rem;text-align:center;">
+  <div style="max-width:600px;margin:0 auto;">
+    <h2 class="display" style="font-size:clamp(1.6rem,3.5vw,2.4rem);" data-i18n="about.title">A Living Miniature World</h2>
+    <p style="opacity:0.8;margin-top:1rem;line-height:1.7;" data-i18n="about.text">This interactive experience transforms a miniature 3D city into a living digital world. Explore its streets, observe its people, control the time of day, and discover how the city changes from sunrise to midnight.</p>
+    <div style="display:flex;gap:0.6rem;justify-content:center;margin-top:1.5rem;flex-wrap:wrap;">
+      <span class="tech-badge">Three.js</span>
+      <span class="tech-badge">WebGL</span>
+      <span class="tech-badge">JavaScript</span>
+      <span class="tech-badge">GSAP</span>
+      <span class="tech-badge">Tailwind CSS</span>
+    </div>
+  </div>
+</section>
+
+<footer style="padding:3rem 1.5rem calc(2.5rem + env(safe-area-inset-bottom,0px));border-top:1px solid var(--glass-border);text-align:center;">
+  <div class="display" style="font-size:1.1rem;font-weight:700;">Tiny City</div>
+  <p style="opacity:0.65;font-size:0.85rem;margin-top:0.4rem;" data-i18n="footer.tagline">A miniature world that never stops moving.</p>
+  <div style="display:flex;gap:1.2rem;justify-content:center;margin-top:1rem;font-size:0.85rem;">
+    <a href="#hero" class="nav-link" data-i18n="nav.home">Home</a>
+    <a href="#districts" class="nav-link" data-i18n="nav.explore">Explore</a>
+    <a href="#about" class="nav-link" data-i18n="nav.about">About</a>
+  </div>
+  <p style="opacity:0.45;font-size:0.75rem;margin-top:1.2rem;">© 2026 Tiny City. All rights reserved.</p>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script>
+(function(){
+"use strict";
+
+/* ======================= I18N ======================= */
+var translations = {
+  en: {
+    nav:{home:"Home",explore:"Explore",about:"About",startExploring:"Start Exploring"},
+    hero:{title:"A Day in a Tiny City",subtitle:"Watch a miniature world come alive from sunrise to midnight.",explore:"Explore the City",watchDay:"Watch the Day"},
+    phase:{sunrise:"Sunrise",morning:"Morning",afternoon:"Afternoon",evening:"Evening",sunset:"Sunset",night:"Night",midnight:"Midnight"},
+    camera:{city:"City View",downtown:"Downtown",residential:"Residential Area",shopping:"Shopping District",park:"Central Park",restaurant:"Restaurant Street",night:"Night View"},
+    building:{type:"Type",height:"Height",people:"People",hours:"Opening Hours",close:"Close"},
+    stats:{buildings:"Buildings",people:"People",vehicles:"Vehicles",shops:"Shops",parks:"Parks"},
+    districts:{title:"Explore the City",
+      downtown:{name:"Downtown",desc:"Skyscrapers, offices, traffic and busy streets."},
+      residential:{name:"Residential Area",desc:"Apartments, houses, schools and parks."},
+      shopping:{name:"Shopping District",desc:"Stores, cafés, restaurants and pedestrians."},
+      restaurant:{name:"Restaurant Street",desc:"Food shops, outdoor seating and nightlife."},
+      park:{name:"Central Park",desc:"Trees, fountains, walking paths and relaxing areas."}},
+    about:{title:"A Living Miniature World",text:"This interactive experience transforms a miniature 3D city into a living digital world. Explore its streets, observe its people, control the time of day, and discover how the city changes from sunrise to midnight."},
+    footer:{tagline:"A miniature world that never stops moving."},
+    loading:"Building the city…",
+    weather:{clear:"Clear",cloudy:"Cloudy",rain:"Rain"},
+    sound:{on:"Sound On",off:"Sound Off"}
+  },
+  km: {
+    nav:{home:"ទំព័រដើម",explore:"រុករក",about:"អំពី",startExploring:"ចាប់ផ្ដើមរុករក"},
+    hero:{title:"មួយថ្ងៃនៅក្នុងទីក្រុងតូចមួយ",subtitle:"សូមមើលពិភពតូចមួយរស់ឡើងវិញ ចាប់ពីព្រឹកព្រលឹមដល់អធ្រាត្រ។",explore:"រុករកទីក្រុង",watchDay:"មើលមួយថ្ងៃពេញ"},
+    phase:{sunrise:"ព្រឹកព្រលឹម",morning:"ព្រឹក",afternoon:"រសៀល",evening:"ល្ងាច",sunset:"ថ្ងៃលិច",night:"យប់",midnight:"អធ្រាត្រ"},
+    camera:{city:"ទិដ្ឋភាពទីក្រុង",downtown:"ចំកណ្ដាលទីក្រុង",residential:"តំបន់លំនៅដ្ឋាន",shopping:"តំបន់ទិញទំនិញ",park:"សួនច្បារកណ្ដាល",restaurant:"ផ្លូវភោជនីយដ្ឋាន",night:"ទិដ្ឋភាពពេលយប់"},
+    building:{type:"ប្រភេទ",height:"កម្ពស់",people:"ចំនួនមនុស្ស",hours:"ម៉ោងបើក",close:"បិទ"},
+    stats:{buildings:"អគារ",people:"ប្រជាជន",vehicles:"យានយន្ត",shops:"ហាង",parks:"សួនច្បារ"},
+    districts:{title:"រុករកទីក្រុង",
+      downtown:{name:"ចំកណ្ដាលទីក្រុង",desc:"អគារខ្ពស់ៗ ការិយាល័យ និងផ្លូវដ៏មមាញឹក។"},
+      residential:{name:"តំបន់លំនៅដ្ឋាន",desc:"អាផាតមិន ផ្ទះ សាលារៀន និងសួនច្បារ។"},
+      shopping:{name:"តំបន់ទិញទំនិញ",desc:"ហាងទំនិញ ហាងកាហ្វេ និងភោជនីយដ្ឋាន។"},
+      restaurant:{name:"ផ្លូវភោជនីយដ្ឋាន",desc:"ហាងអាហារ កន្លែងអង្គុយក្រៅ និងជីវិតពេលយប់។"},
+      park:{name:"សួនច្បារកណ្ដាល",desc:"ដើមឈើ ទឹកបាញ់ ផ្លូវដើរ និងកន្លែងសម្រាក។"}},
+    about:{title:"ពិភពតូចមួយដែលមានជីវិត",text:"បទពិសោធន៍អន្តរកម្មនេះបំប្លែងទីក្រុង 3D តូចមួយ ទៅជាពិភពឌីជីថលដែលមានជីវិត។ រុករកផ្លូវរបស់វា សង្កេតមើលប្រជាជនរបស់វា គ្រប់គ្រងពេលវេលា និងរកឃើញពីរបៀបដែលទីក្រុងផ្លាស់ប្តូរពីព្រឹកព្រលឹមដល់អធ្រាត្រ។"},
+    footer:{tagline:"ពិភពតូចមួយដែលមិនដែលឈប់ធ្វើចលនា។"},
+    loading:"កំពុងសាងសង់ទីក្រុង…",
+    weather:{clear:"ស្រឡះ",cloudy:"ពពក",rain:"ភ្លៀង"},
+    sound:{on:"បើកសំឡេង",off:"បិទសំឡេង"}
+  },
+  zh: {
+    nav:{home:"首页",explore:"探索",about:"关于",startExploring:"开始探索"},
+    hero:{title:"迷你城市的一天",subtitle:"看一座微缩世界从日出到午夜苏醒。",explore:"探索城市",watchDay:"播放一整天"},
+    phase:{sunrise:"日出",morning:"早晨",afternoon:"下午",evening:"傍晚",sunset:"日落",night:"夜晚",midnight:"午夜"},
+    camera:{city:"城市视角",downtown:"市中心",residential:"住宅区",shopping:"商业区",park:"中央公园",restaurant:"美食街",night:"夜景"},
+    building:{type:"类型",height:"高度",people:"人数",hours:"营业时间",close:"关闭"},
+    stats:{buildings:"建筑",people:"居民",vehicles:"车辆",shops:"商店",parks:"公园"},
+    districts:{title:"探索城市",
+      downtown:{name:"市中心",desc:"摩天大楼、办公楼与繁忙的街道。"},
+      residential:{name:"住宅区",desc:"公寓、住宅、学校与公园。"},
+      shopping:{name:"商业区",desc:"商店、咖啡馆与餐厅。"},
+      restaurant:{name:"美食街",desc:"美食摊、露天座位与夜生活。"},
+      park:{name:"中央公园",desc:"树木、喷泉、步道与休闲空间。"}},
+    about:{title:"一个有生命的微缩世界",text:"这个互动体验将一座微缩三维城市变成了一个有生命的数字世界。探索它的街道，观察它的居民，掌控一天的时光，看看城市如何从日出变化到午夜。"},
+    footer:{tagline:"一个永不停止运转的微缩世界。"},
+    loading:"正在建造城市…",
+    weather:{clear:"晴朗",cloudy:"多云",rain:"下雨"},
+    sound:{on:"开启声音",off:"关闭声音"}
+  },
+  ja: {
+    nav:{home:"ホーム",explore:"探索",about:"概要",startExploring:"探索を始める"},
+    hero:{title:"小さな街の一日",subtitle:"日の出から真夜中まで、ミニチュアの世界が動き出す様子をご覧ください。",explore:"街を探索する",watchDay:"一日を再生する"},
+    phase:{sunrise:"夜明け",morning:"朝",afternoon:"午後",evening:"夕方",sunset:"日没",night:"夜",midnight:"真夜中"},
+    camera:{city:"シティビュー",downtown:"ダウンタウン",residential:"住宅街",shopping:"ショッピング街",park:"セントラルパーク",restaurant:"レストラン通り",night:"ナイトビュー"},
+    building:{type:"種類",height:"高さ",people:"人数",hours:"営業時間",close:"閉じる"},
+    stats:{buildings:"建物",people:"人口",vehicles:"車両",shops:"店舗",parks:"公園"},
+    districts:{title:"街を探索する",
+      downtown:{name:"ダウンタウン",desc:"高層ビル、オフィス、賑やかな通り。"},
+      residential:{name:"住宅街",desc:"アパート、家、学校、公園。"},
+      shopping:{name:"ショッピング街",desc:"店舗、カフェ、レストラン。"},
+      restaurant:{name:"レストラン通り",desc:"飲食店、テラス席、夜のにぎわい。"},
+      park:{name:"セントラルパーク",desc:"木々、噴水、散歩道、憩いの場。"}},
+    about:{title:"生きているミニチュアの世界",text:"このインタラクティブな体験は、小さな3D都市を生きたデジタルの世界へと変えます。通りを探索し、人々を観察し、時間の流れを操り、街が夜明けから真夜中までどのように変化するかを発見してください。"},
+    footer:{tagline:"止まることのない小さな世界。"},
+    loading:"街を建設中…",
+    weather:{clear:"晴れ",cloudy:"曇り",rain:"雨"},
+    sound:{on:"サウンドオン",off:"サウンドオフ"}
+  }
+};
+
+/* ============================================================
+   TIME PHASE TABLE — moved up so it is assigned BEFORE initLang()
+   runs. Previously this was defined further down in the TIME
+   SYSTEM section, but initLang() -> setLanguage() ->
+   applyTranslations() -> updatePhaseLabel() -> phaseForHour()
+   fired before the array existed, causing:
+     TypeError: Cannot read properties of undefined (reading '0')
+   ============================================================ */
+var phaseStops = [
+  {h:6, key:"sunrise", emoji:"🌅"},
+  {h:8, key:"morning", emoji:"☀️"},
+  {h:12,key:"afternoon", emoji:"🌤️"},
+  {h:17,key:"evening", emoji:"🌇"},
+  {h:18.5,key:"sunset", emoji:"🌇"},
+  {h:20,key:"night", emoji:"🌙"},
+  {h:24,key:"midnight", emoji:"🌌"}
+];
+function phaseForHour(h){
+  var current = phaseStops[0];
+  for (var i=0;i<phaseStops.length;i++){
+    if (h >= phaseStops[i].h) current = phaseStops[i];
+  }
+  return current;
+}
+
+var currentLang = "en";
+function t(path){
+  var parts = path.split(".");
+  var node = translations[currentLang];
+  for (var i=0;i<parts.length;i++){ node = node && node[parts[i]]; }
+  if (node === undefined){
+    node = translations.en;
+    for (var j=0;j<parts.length;j++){ node = node && node[parts[j]]; }
+  }
+  return node || "";
+}
+function applyTranslations(){
+  document.documentElement.lang = currentLang;
+  document.body.classList.remove("lang-km","lang-zh","lang-ja");
+  if (currentLang !== "en") document.body.classList.add("lang-"+currentLang);
+  var nodes = document.querySelectorAll("[data-i18n]");
+  nodes.forEach(function(el){
+    var val = t(el.getAttribute("data-i18n"));
+    if (val) el.textContent = val;
+  });
+  updatePhaseLabel();
+  if (selectedBuilding) showBuildingInfo(selectedBuilding);
+}
+function setLanguage(lang){
+  currentLang = translations[lang] ? lang : "en";
+  try { localStorage.setItem("tinycity_lang", currentLang); } catch(e){}
+  var flags = {en:"🇬🇧",km:"🇰🇭",zh:"🇨🇳",ja:"🇯🇵"};
+  document.getElementById("lang-flag").textContent = flags[currentLang];
+  document.getElementById("lang-label").textContent = currentLang.toUpperCase();
+  applyTranslations();
+}
+/* Belt-and-suspenders: only run language init once the DOM is parsed.
+   The script tag is at the end of <body>, so DOMContentLoaded will fire
+   immediately after this — by which point every top-level var has been
+   assigned. This makes the order bug impossible even if someone later
+   moves phaseStops back down. */
+function initLang(){
+  var saved = null;
+  try { saved = localStorage.getItem("tinycity_lang"); } catch(e){}
+  setLanguage(saved || "en");
+}
+if (document.readyState === "loading"){
+  document.addEventListener("DOMContentLoaded", initLang);
+} else {
+  initLang();
+}
+
+/* ======================= NAV / UI WIRING ======================= */
+var navbar = document.getElementById("navbar");
+window.addEventListener("scroll", function(){
+  navbar.classList.toggle("scrolled", window.scrollY > 40);
+}, {passive:true});
+
+document.getElementById("lang-btn").addEventListener("click", function(){
+  var menu = document.getElementById("lang-menu");
+  var willOpen = menu.classList.contains("hidden");
+  menu.classList.toggle("hidden");
+  this.setAttribute("aria-expanded", willOpen ? "true":"false");
+});
+document.querySelectorAll(".lang-option").forEach(function(btn){
+  btn.addEventListener("click", function(){
+    setLanguage(this.getAttribute("data-lang"));
+    document.getElementById("lang-menu").classList.add("hidden");
+  });
+});
+document.addEventListener("click", function(e){
+  var menu = document.getElementById("lang-menu");
+  if (!menu.classList.contains("hidden") && !menu.contains(e.target) && e.target.id !== "lang-btn"){
+    menu.classList.add("hidden");
+  }
+});
+
+document.getElementById("hamburger").addEventListener("click", function(){
+  document.getElementById("mobile-menu").classList.add("open");
+});
+document.getElementById("close-mobile-menu").addEventListener("click", function(){
+  document.getElementById("mobile-menu").classList.remove("open");
+});
+document.querySelectorAll("#mobile-menu a").forEach(function(a){
+  a.addEventListener("click", function(){ document.getElementById("mobile-menu").classList.remove("open"); });
+});
+
+var prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+var isMobile = window.matchMedia("(max-width: 768px)").matches;
+
+/* ======================= THREE.JS SCENE ======================= */
+var canvas = document.getElementById("city-canvas");
+var renderer = new THREE.WebGLRenderer({canvas:canvas, antialias:true, alpha:false});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.5 : 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+var scene = new THREE.Scene();
+var camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 500);
+camera.position.set(38, 30, 46);
+
+var controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.minDistance = 8;
+controls.maxDistance = 110;
+controls.maxPolarAngle = Math.PI * 0.49;
+controls.target.set(0, 2, 0);
+controls.autoRotate = !prefersReducedMotion;
+controls.autoRotateSpeed = 0.35;
+
+function resize(){
+  var w = canvas.parentElement.clientWidth;
+  var h = canvas.parentElement.clientHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w/h;
+  camera.updateProjectionMatrix();
+}
+window.addEventListener("resize", resize);
+
+/* ---- Lights ---- */
+var hemiLight = new THREE.HemisphereLight(0xbcd6ff, 0x1a2130, 0.55);
+scene.add(hemiLight);
+var sunLight = new THREE.DirectionalLight(0xffffff, 1.1);
+sunLight.castShadow = true;
+sunLight.shadow.mapSize.set(isMobile ? 1024 : 2048, isMobile ? 1024 : 2048);
+sunLight.shadow.camera.left = -45; sunLight.shadow.camera.right = 45;
+sunLight.shadow.camera.top = 45; sunLight.shadow.camera.bottom = -45;
+sunLight.shadow.camera.far = 140;
+scene.add(sunLight);
+scene.add(sunLight.target);
+var ambientLight = new THREE.AmbientLight(0x445066, 0.4);
+scene.add(ambientLight);
+
+/* Sun & moon meshes */
+var sunMesh = new THREE.Mesh(new THREE.SphereGeometry(2.2, 16, 16), new THREE.MeshBasicMaterial({color:0xfff2c8}));
+scene.add(sunMesh);
+var moonMesh = new THREE.Mesh(new THREE.SphereGeometry(1.6, 16, 16), new THREE.MeshBasicMaterial({color:0xd7e3ff}));
+scene.add(moonMesh);
+
+/* Fog */
+scene.fog = new THREE.Fog(0x0b1220, 60, 170);
+
+/* ---- Ground & roads ---- */
+var groundMat = new THREE.MeshStandardMaterial({color:0x33422f, roughness:1});
+var ground = new THREE.Mesh(new THREE.PlaneGeometry(160,160), groundMat);
+ground.rotation.x = -Math.PI/2;
+ground.receiveShadow = true;
+scene.add(ground);
+
+var roadMat = new THREE.MeshStandardMaterial({color:0x24262c, roughness:0.9});
+var roadGroup = new THREE.Group();
+var citySpan = 62;
+var laneStep = 15.5;
+for (var gx=-2; gx<=2; gx++){
+  var rH = new THREE.Mesh(new THREE.PlaneGeometry(citySpan, 3.4), roadMat);
+  rH.rotation.x = -Math.PI/2; rH.position.set(0, 0.02, gx*laneStep);
+  rH.receiveShadow = true; roadGroup.add(rH);
+  var rV = new THREE.Mesh(new THREE.PlaneGeometry(3.4, citySpan), roadMat);
+  rV.rotation.x = -Math.PI/2; rV.position.set(gx*laneStep, 0.02, 0);
+  rV.receiveShadow = true; roadGroup.add(rV);
+}
+scene.add(roadGroup);
+
+/* lane markings (dashed) - simple thin strips */
+var markMat = new THREE.MeshBasicMaterial({color:0xdad6c8});
+for (var mx=-2; mx<=2; mx++){
+  for (var d=-28; d<28; d+=4){
+    var m1 = new THREE.Mesh(new THREE.PlaneGeometry(1.1,0.14), markMat);
+    m1.rotation.x=-Math.PI/2; m1.position.set(d, 0.03, mx*laneStep); roadGroup.add(m1);
+    var m2 = new THREE.Mesh(new THREE.PlaneGeometry(0.14,1.1), markMat);
+    m2.rotation.x=-Math.PI/2; m2.position.set(mx*laneStep, 0.03, d); roadGroup.add(m2);
+  }
+}
+
+/* ---- District zoning helper ---- */
+function districtFor(x,z){
+  if (Math.abs(x) < 8 && Math.abs(z) < 8) return "park";
+  if (x > 0 && z < 0) return "downtown";
+  if (x < 0 && z < 0) return "residential";
+  if (x > 0 && z > 0) return "shopping";
+  return "restaurant";
+}
+var districtColors = {
+  downtown:[0x3a4a63,0x54627a,0x2c3a52,0x475a75],
+  residential:[0xb5895b,0xc79a6b,0xa17347,0x9c7c53],
+  shopping:[0xd88a5b,0xdba25f,0xc76b52,0xe0a86e],
+  restaurant:[0xa14b3f,0xc25c4a,0x8a3d33,0xb85647]
+};
+var buildingNames = {
+  downtown:["Central Tower","Meridian Plaza","Skyline Offices","Horizon Building","Union Tower"],
+  residential:["Maple Apartments","Willow Court","Cedar Homes","Birchwood Flats","Elm Residence"],
+  shopping:["The Arcade","Market Row","Lantern Mall","Paper Street Shops","Copper Boutique"],
+  restaurant:["Noodle House","The Golden Wok","Riverside Café","Ember Grill","Sunset Diner"]
+};
+var buildingTypes = {downtown:"Office", residential:"Apartments", shopping:"Shop", restaurant:"Restaurant"};
+
+/* ---- Buildings (grouped by district, with emissive windows) ---- */
+var buildings = [];
+var buildingGroup = new THREE.Group();
+scene.add(buildingGroup);
+var blockCoords = [];
+for (var bx=-2; bx<=2; bx++){
+  for (var bz=-2; bz<=2; bz++){
+    if (bx===0 && bz===0) continue; // reserve center for park
+    blockCoords.push([bx,bz]);
+  }
+}
+blockCoords.forEach(function(coord, idx){
+  var bx = coord[0]*laneStep, bz = coord[1]*laneStep;
+  var district = districtFor(bx,bz);
+  var perBlock = district === "downtown" ? 3 : (district === "park" ? 0 : 2);
+  for (var n=0; n<perBlock; n++){
+    var offX = (n - (perBlock-1)/2) * 4.2 + (Math.random()-0.5)*1.4;
+    var offZ = (Math.random()-0.5)*3.2;
+    var x = bx + offX, z = bz + offZ;
+    var height = district === "downtown" ? (10 + Math.random()*16) : district === "residential" ? (5+Math.random()*6) : (3.5+Math.random()*3.5);
+    var w = district === "downtown" ? 3.2+Math.random() : 3+Math.random()*1.4;
+    var d = w * (0.7+Math.random()*0.5);
+    var colorArr = districtColors[district];
+    var color = colorArr[Math.floor(Math.random()*colorArr.length)];
+    var mat = new THREE.MeshStandardMaterial({color:color, roughness:0.75, emissive:0x000000, emissiveIntensity:0});
+    var mesh = new THREE.Mesh(new THREE.BoxGeometry(w,height,d), mat);
+    mesh.position.set(x, height/2, z);
+    mesh.castShadow = true; mesh.receiveShadow = true;
+    var nameList = buildingNames[district];
+    var name = nameList[Math.floor(Math.random()*nameList.length)];
+    mesh.userData = {
+      isBuilding:true, district:district,
+      name:name, type:buildingTypes[district],
+      floors: Math.max(1, Math.round(height/2.6)),
+      people: Math.round(height * (8 + Math.random()*6)),
+      hours: district==="restaurant" ? "11:00–23:00" : district==="shopping" ? "09:00–20:00" : district==="residential" ? "—" : "08:00–18:00"
+    };
+    buildingGroup.add(mesh);
+    buildings.push(mesh);
+
+    // window emissive strip (roof accent light, cheap "windows glow" via emissive on a thin overlay box)
+    var winMat = new THREE.MeshStandardMaterial({color:0x111111, emissive:0xffdd99, emissiveIntensity:0});
+    var winMesh = new THREE.Mesh(new THREE.BoxGeometry(w*1.001,height*0.96,d*1.001), winMat);
+    winMesh.position.copy(mesh.position);
+    mesh.userData.windowMesh = winMesh;
+    buildingGroup.add(winMesh);
+  }
+});
+
+/* ---- Central park ---- */
+var parkGroup = new THREE.Group();
+var parkGround = new THREE.Mesh(new THREE.CircleGeometry(9.5,32), new THREE.MeshStandardMaterial({color:0x3f6b3a}));
+parkGround.rotation.x=-Math.PI/2; parkGround.position.y=0.03; parkGround.receiveShadow=true;
+parkGroup.add(parkGround);
+function makeTree(x,z,scale){
+  var g = new THREE.Group();
+  var trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.14,0.18,1.1,6), new THREE.MeshStandardMaterial({color:0x5b4230}));
+  trunk.position.y=0.55; trunk.castShadow=true;
+  var leaves = new THREE.Mesh(new THREE.ConeGeometry(0.95,2.1,8), new THREE.MeshStandardMaterial({color:0x2f7d4f}));
+  leaves.position.y=1.9; leaves.castShadow=true;
+  g.add(trunk,leaves); g.position.set(x,0,z); g.scale.setScalar(scale||1);
+  return g;
+}
+for (var ti=0; ti<14; ti++){
+  var ang = (ti/14)*Math.PI*2;
+  var rad = 4 + Math.random()*4.5;
+  parkGroup.add(makeTree(Math.cos(ang)*rad, Math.sin(ang)*rad, 0.9+Math.random()*0.6));
+}
+var fountainBase = new THREE.Mesh(new THREE.CylinderGeometry(1.4,1.5,0.5,20), new THREE.MeshStandardMaterial({color:0x8891a1}));
+fountainBase.position.y=0.25; fountainBase.castShadow=true;
+var fountainWater = new THREE.Mesh(new THREE.CylinderGeometry(1.1,1.1,0.15,20), new THREE.MeshStandardMaterial({color:0x6fb7d8, emissive:0x1a3a4a, transparent:true, opacity:0.85}));
+fountainWater.position.y=0.53;
+parkGroup.add(fountainBase, fountainWater);
+scene.add(parkGroup);
+
+/* Scattered trees across other districts */
+var treeScatter = new THREE.Group();
+blockCoords.forEach(function(coord){
+  if (Math.random() < 0.6){
+    var x = coord[0]*laneStep + (Math.random()-0.5)*6;
+    var z = coord[1]*laneStep + (Math.random()-0.5)*6;
+    treeScatter.add(makeTree(x,z,0.55+Math.random()*0.3));
+  }
+});
+scene.add(treeScatter);
+
+/* ---- Street lamps ---- */
+var lampGroup = new THREE.Group();
+var lampMat = new THREE.MeshStandardMaterial({color:0x2a2a2a});
+var lampGlowMat = new THREE.MeshStandardMaterial({color:0x332200, emissive:0xffcc66, emissiveIntensity:0});
+var lampBulbMeshes = [];
+function makeLamp(a,b){
+  var g = new THREE.Group();
+  var pole = new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.08,2.6,6), lampMat);
+  pole.position.y=1.3; pole.castShadow=true;
+  var bulb = new THREE.Mesh(new THREE.SphereGeometry(0.16,8,8), lampGlowMat.clone());
+  bulb.position.y=2.65;
+  g.add(pole,bulb);
+  g.position.set(a,0,b);
+  lampBulbMeshes.push(bulb);
+  return g;
+}
+for (var lg=-2; lg<=2; lg++){
+  [-1,1].forEach(function(side){
+    var pos = lg*laneStep + side*2.4;
+    lampGroup.add(makeLamp(pos, -30));
+    lampGroup.add(makeLamp(pos, 30));
+    lampGroup.add(makeLamp(-30, pos));
+    lampGroup.add(makeLamp(30, pos));
+  });
+}
+scene.add(lampGroup);
+
+/* ---- Traffic lights ---- */
+var trafficLights = [];
+[[laneStep*0.5,laneStep*0.5],[-laneStep*0.5,laneStep*0.5],[laneStep*0.5,-laneStep*0.5],[-laneStep*0.5,-laneStep*0.5]].forEach(function(p){
+  var g = new THREE.Group();
+  var pole = new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.09,2.0,6), new THREE.MeshStandardMaterial({color:0x222222}));
+  pole.position.y=1.0; pole.castShadow=true;
+  var box = new THREE.Mesh(new THREE.BoxGeometry(0.24,0.55,0.2), new THREE.MeshStandardMaterial({color:0x111111}));
+  box.position.y=2.05;
+  var red = new THREE.Mesh(new THREE.SphereGeometry(0.07,8,8), new THREE.MeshStandardMaterial({color:0x330000, emissive:0xff2222, emissiveIntensity:0.1}));
+  red.position.set(0,2.2,0.11);
+  var yellow = new THREE.Mesh(new THREE.SphereGeometry(0.07,8,8), new THREE.MeshStandardMaterial({color:0x332200, emissive:0xffcc00, emissiveIntensity:0.1}));
+  yellow.position.set(0,2.05,0.11);
+  var green = new THREE.Mesh(new THREE.SphereGeometry(0.07,8,8), new THREE.MeshStandardMaterial({color:0x003300, emissive:0x22ff55, emissiveIntensity:0.1}));
+  green.position.set(0,1.9,0.11);
+  g.add(pole,box,red,yellow,green);
+  g.position.set(p[0],0,p[1]);
+  scene.add(g);
+  trafficLights.push({red:red,yellow:yellow,green:green,offset:Math.random()*6});
+});
+
+/* ---- Cars (pooled meshes moving on loop paths) ---- */
+var carColors = [0xd64545,0x4577d6,0xe0c23c,0xe8e8e8,0x2f2f2f,0x45a879];
+var cars = [];
+var carGeo = new THREE.BoxGeometry(1.0,0.5,0.5);
+var carCabGeo = new THREE.BoxGeometry(0.55,0.35,0.46);
+function makeCar(){
+  var g = new THREE.Group();
+  var body = new THREE.Mesh(carGeo, new THREE.MeshStandardMaterial({color:carColors[Math.floor(Math.random()*carColors.length)]}));
+  body.position.y=0.28; body.castShadow=true;
+  var cab = new THREE.Mesh(carCabGeo, new THREE.MeshStandardMaterial({color:0x1c1c1c}));
+  cab.position.set(0,0.58,0);
+  var lightMat = new THREE.MeshStandardMaterial({color:0xfff6c8, emissive:0xfff2a0, emissiveIntensity:1});
+  var headlight = new THREE.Mesh(new THREE.SphereGeometry(0.06,6,6), lightMat);
+  headlight.position.set(0.52,0.28,0);
+  g.add(body,cab,headlight);
+  return g;
+}
+var carCount = isMobile ? 10 : 18;
+for (var ci=0; ci<carCount; ci++){
+  var lane = (Math.floor(Math.random()*5)-2)*laneStep;
+  var horizontal = Math.random() < 0.5;
+  var dir = Math.random() < 0.5 ? 1 : -1;
+  var car = makeCar();
+  scene.add(car);
+  cars.push({mesh:car, lane:lane, horizontal:horizontal, dir:dir, t: Math.random()*citySpan - citySpan/2, speed: 3+Math.random()*2});
+}
+
+/* ---- Pedestrians ---- */
+var pedestrians = [];
+function makePedestrian(){
+  var g = new THREE.Group();
+  var bodyGeo = THREE.CapsuleGeometry ? new THREE.CapsuleGeometry(0.13,0.4,4,8) : new THREE.CylinderGeometry(0.13,0.13,0.7,8);
+  var body = new THREE.Mesh(bodyGeo,
+    new THREE.MeshStandardMaterial({color: new THREE.Color(0.3+Math.random()*0.6,0.3+Math.random()*0.6,0.3+Math.random()*0.6)}));
+  body.position.y=0.45; body.castShadow=true;
+  var head = new THREE.Mesh(new THREE.SphereGeometry(0.12,8,8), new THREE.MeshStandardMaterial({color:0xe8c39e}));
+  head.position.y=0.82;
+  g.add(body,head);
+  return g;
+}
+var pedCount = isMobile ? 8 : 16;
+for (var pi=0; pi<pedCount; pi++){
+  var pLane = (Math.floor(Math.random()*5)-2)*laneStep + (Math.random()<0.5?2.2:-2.2);
+  var pHorizontal = Math.random() < 0.5;
+  var pDir = Math.random() < 0.5 ? 1 : -1;
+  var ped = makePedestrian();
+  scene.add(ped);
+  pedestrians.push({mesh:ped, lane:pLane, horizontal:pHorizontal, dir:pDir, t: Math.random()*citySpan - citySpan/2, speed: 0.8+Math.random()*0.6});
+}
+
+/* ---- Weather: rain ---- */
+var rainCount = isMobile ? 400 : 1200;
+var rainGeo = new THREE.BufferGeometry();
+var rainPos = new Float32Array(rainCount*3);
+for (var ri=0; ri<rainCount; ri++){
+  rainPos[ri*3]= (Math.random()-0.5)*90;
+  rainPos[ri*3+1]= Math.random()*40;
+  rainPos[ri*3+2]= (Math.random()-0.5)*90;
+}
+rainGeo.setAttribute("position", new THREE.BufferAttribute(rainPos,3));
+var rainMat = new THREE.PointsMaterial({color:0x9fc4e8, size:0.15, transparent:true, opacity:0.55});
+var rain = new THREE.Points(rainGeo, rainMat);
+rain.visible = false;
+scene.add(rain);
+
+var weatherModes = ["clear","cloudy","rain"];
+var weatherIdx = 0;
+var weatherIcons = {clear:"☀️",cloudy:"☁️",rain:"🌧️"};
+document.getElementById("weather-toggle").addEventListener("click", function(){
+  weatherIdx = (weatherIdx+1) % weatherModes.length;
+  var mode = weatherModes[weatherIdx];
+  this.textContent = weatherIcons[mode];
+  this.setAttribute("title", t("weather."+mode));
+  rain.visible = (mode==="rain");
+  scene.fog.near = mode==="clear" ? 60 : mode==="cloudy" ? 40 : 30;
+  scene.fog.far = mode==="clear" ? 170 : mode==="cloudy" ? 120 : 95;
+});
+
+/* ---- Sound (synthesized ambience, off by default) ---- */
+var audioCtx=null, ambienceNodes=null, soundOn=false;
+document.getElementById("sound-toggle").addEventListener("click", function(){
+  soundOn = !soundOn;
+  this.textContent = soundOn ? "🔊" : "🔇";
+  this.setAttribute("title", t(soundOn?"sound.on":"sound.off"));
+  if (soundOn){
+    try{
+      if (!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+      if (audioCtx.state === "suspended") audioCtx.resume();
+      var o1=audioCtx.createOscillator(), g1=audioCtx.createGain();
+      o1.type="sine"; o1.frequency.value=90; g1.gain.value=0.02;
+      var o2=audioCtx.createOscillator(), g2=audioCtx.createGain();
+      o2.type="triangle"; o2.frequency.value=220; g2.gain.value=0.008;
+      o1.connect(g1).connect(audioCtx.destination);
+      o2.connect(g2).connect(audioCtx.destination);
+      o1.start(); o2.start();
+      ambienceNodes=[o1,o2];
+    }catch(e){}
+  } else if (ambienceNodes){
+    ambienceNodes.forEach(function(n){ try{n.stop();}catch(e){} });
+    ambienceNodes=null;
+  }
+});
+
+/* ======================= TIME SYSTEM ======================= */
+/* phaseStops / phaseForHour were previously declared here; they have
+   been moved to the top of the IIFE (see above) so they exist before
+   initLang() runs. */
+var currentHour = 6;
+var playing = false;
+var speedMultiplier = 1;
+var selectedBuilding = null;
+
+function updatePhaseLabel(){
+  var phase = phaseForHour(currentHour);
+  document.getElementById("phase-emoji").textContent = phase.emoji;
+  document.getElementById("phase-label").textContent = t("phase."+phase.key);
+  var hh = Math.floor(currentHour) % 24;
+  var mm = Math.floor((currentHour%1)*60);
+  var displayH = hh % 12; if (displayH===0) displayH=12;
+  var ampm = hh < 12 ? "AM" : "PM";
+  document.getElementById("clock-display").textContent =
+    String(displayH).padStart(2,"0")+":"+String(mm).padStart(2,"0")+" "+ampm;
+}
+
+/* Sky color keyframes across the day (RGB 0-1) */
+var skyKeys = [
+  {h:6, c:[0.85,0.55,0.5]},
+  {h:8, c:[0.55,0.72,0.95]},
+  {h:12,c:[0.45,0.68,0.95]},
+  {h:17,c:[0.7,0.55,0.4]},
+  {h:18.5,c:[0.85,0.45,0.4]},
+  {h:20,c:[0.06,0.08,0.18]},
+  {h:24,c:[0.02,0.03,0.08]}
+];
+function lerpColorKeys(keys, h){
+  var lo = keys[0], hi = keys[keys.length-1];
+  for (var i=0;i<keys.length-1;i++){
+    if (h >= keys[i].h && h <= keys[i+1].h){ lo = keys[i]; hi = keys[i+1]; break; }
+  }
+  var span = (hi.h - lo.h) || 1;
+  var f = Math.min(1, Math.max(0, (h - lo.h) / span));
+  return [
+    lo.c[0] + (hi.c[0]-lo.c[0])*f,
+    lo.c[1] + (hi.c[1]-lo.c[1])*f,
+    lo.c[2] + (hi.c[2]-lo.c[2])*f
+  ];
+}
+
+function updateEnvironment(h){
+  var sky = lerpColorKeys(skyKeys, h);
+  var skyColor = new THREE.Color(sky[0],sky[1],sky[2]);
+  scene.background = skyColor;
+  scene.fog.color = skyColor;
+
+  // Sun arc across 6-20 (visible daylight window), moon fills the rest
+  var dayProgress = Math.min(1, Math.max(0, (h-6)/14)); // 0 at 6, 1 at 20
+  var sunAngle = Math.PI * dayProgress; // 0 -> PI over the day (rise to set)
+  var sunRadius = 55;
+  var sunX = Math.cos(Math.PI - sunAngle) * sunRadius;
+  var sunY = Math.sin(sunAngle) * sunRadius * 0.6 + 3;
+  var sunZ = -20;
+  sunMesh.position.set(sunX, Math.max(sunY,-5), sunZ);
+  sunLight.position.set(sunX*0.6, Math.max(sunY,4), sunZ*0.6);
+  sunLight.target.position.set(0,0,0);
+
+  var nightProgress = h >= 20 ? Math.min(1,(h-20)/4) : (h<6 ? 1 : 0);
+  var moonAngle = Math.PI * nightProgress;
+  moonMesh.position.set(Math.cos(moonAngle)*50, Math.sin(moonAngle)*35+10, 25);
+  moonMesh.visible = h >= 18.5 || h < 6;
+  sunMesh.visible = h < 20;
+
+  var daylight = Math.max(0.08, Math.sin(Math.PI*dayProgress));
+  sunLight.intensity = 0.15 + daylight*1.15;
+  var sunHue = h < 8 || h > 17 ? 0xffb26b : 0xfff4dd;
+  sunLight.color.setHex(h>=20 || h<6 ? 0x33507a : sunHue);
+  hemiLight.intensity = 0.25 + daylight*0.5;
+  ambientLight.intensity = h>=19.5 || h<6 ? 0.5 : 0.3;
+
+  // Night lighting toggle (windows / street lamps / traffic emissive)
+  var isNight = h >= 18.5 || h < 6.2;
+  buildings.forEach(function(b){
+    b.userData.windowMesh.material.emissiveIntensity = isNight ? 0.55 : 0;
+  });
+  lampBulbMeshes.forEach(function(bulb){ bulb.material.emissiveIntensity = isNight ? 0.9 : 0; });
+}
+
+/* ======================= CAMERA PRESETS ======================= */
+var cameraPresets = {
+  city:{pos:[38,30,46], target:[0,2,0]},
+  downtown:{pos:[26,14,-30], target:[laneStep,4,-laneStep]},
+  residential:{pos:[-30,12,-26], target:[-laneStep,3,-laneStep]},
+  shopping:{pos:[30,12,26], target:[laneStep,3,laneStep]},
+  restaurant:{pos:[-30,12,26], target:[-laneStep,3,laneStep]},
+  park:{pos:[0,14,16], target:[0,1,0]},
+  night:{pos:[20,9,20], target:[0,3,0]}
+};
+function flyTo(name){
+  var p = cameraPresets[name];
+  if (!p) return;
+  controls.autoRotate = false;
+  if (window.gsap && !prefersReducedMotion){
+    gsap.to(camera.position, {duration:1.6, ease:"power2.inOut", x:p.pos[0], y:p.pos[1], z:p.pos[2]});
+    gsap.to(controls.target, {duration:1.6, ease:"power2.inOut", x:p.target[0], y:p.target[1], z:p.target[2]});
+  } else {
+    camera.position.set(p.pos[0],p.pos[1],p.pos[2]);
+    controls.target.set(p.target[0],p.target[1],p.target[2]);
+  }
+}
+document.getElementById("preset-select").addEventListener("change", function(){ flyTo(this.value); });
+document.querySelectorAll(".district-card").forEach(function(card){
+  card.addEventListener("click", function(){
+    var preset = this.getAttribute("data-preset");
+    document.getElementById("preset-select").value = preset;
+    document.getElementById("hero").scrollIntoView({behavior: prefersReducedMotion ? "auto":"smooth"});
+    setTimeout(function(){ flyTo(preset); }, 350);
+  });
+});
+
+document.getElementById("explore-city-btn").addEventListener("click", function(){
+  flyTo("downtown");
+});
+document.getElementById("start-exploring-nav").addEventListener("click", function(){
+  document.getElementById("hero").scrollIntoView({behavior: prefersReducedMotion ? "auto":"smooth"});
+  flyTo("city");
+});
+document.getElementById("watch-day-btn").addEventListener("click", function(){
+  currentHour = 6;
+  playing = true;
+  updatePlayIcon();
+});
+
+/* ======================= TIME CONTROLS UI ======================= */
+var slider = document.getElementById("timeline-range");
+slider.addEventListener("input", function(){
+  currentHour = parseFloat(this.value);
+  playing = false;
+  updatePlayIcon();
+  updatePhaseLabel();
+  updateEnvironment(currentHour);
+});
+function updatePlayIcon(){
+  document.getElementById("play-btn").textContent = playing ? "⏸️" : "▶️";
+}
+document.getElementById("play-btn").addEventListener("click", function(){
+  playing = !playing;
+  updatePlayIcon();
+});
+document.getElementById("restart-btn").addEventListener("click", function(){
+  currentHour = 6; playing = false; updatePlayIcon();
+  slider.value = 6; updatePhaseLabel(); updateEnvironment(6);
+});
+document.querySelectorAll(".speed-btn").forEach(function(btn){
+  btn.addEventListener("click", function(){
+    document.querySelectorAll(".speed-btn").forEach(function(b){ b.classList.remove("active"); });
+    this.classList.add("active");
+    speedMultiplier = parseFloat(this.getAttribute("data-speed"));
+  });
+});
+
+/* ======================= BUILDING SELECTION ======================= */
+var raycaster = new THREE.Raycaster();
+var pointer = new THREE.Vector2();
+function showBuildingInfo(mesh){
+  selectedBuilding = mesh;
+  var d = mesh.userData;
+  document.getElementById("bi-name").textContent = d.name;
+  document.getElementById("bi-type").textContent = d.type;
+  document.getElementById("bi-height").textContent = d.floors + (currentLang==="en" ? " floors" : "");
+  document.getElementById("bi-people").textContent = d.people;
+  document.getElementById("bi-hours").textContent = d.hours;
+  document.getElementById("building-info").classList.add("show");
+}
+document.getElementById("bi-close").addEventListener("click", function(){
+  document.getElementById("building-info").classList.remove("show");
+  if (selectedBuilding) selectedBuilding.material.emissive.setHex(0x000000);
+  selectedBuilding = null;
+});
+function onPointerDown(clientX, clientY){
+  var rect = canvas.getBoundingClientRect();
+  pointer.x = ((clientX-rect.left)/rect.width)*2-1;
+  pointer.y = -((clientY-rect.top)/rect.height)*2+1;
+  raycaster.setFromCamera(pointer, camera);
+  var hits = raycaster.intersectObjects(buildings);
+  if (hits.length){
+    if (selectedBuilding) selectedBuilding.material.emissive.setHex(0x000000);
+    var mesh = hits[0].object;
+    mesh.material.emissive.setHex(0x333333);
+    showBuildingInfo(mesh);
+  }
+}
+canvas.addEventListener("click", function(e){ onPointerDown(e.clientX, e.clientY); });
+
+/* ======================= STATS COUNTERS ======================= */
+var statEls = document.querySelectorAll(".stat-num");
+var statsAnimated = false;
+function animateStats(){
+  if (statsAnimated) return;
+  statsAnimated = true;
+  statEls.forEach(function(el){
+    var target = parseInt(el.getAttribute("data-target"),10);
+    var start = 0;
+    var duration = prefersReducedMotion ? 1 : 1400;
+    var startTime = null;
+    function step(ts){
+      if (!startTime) startTime = ts;
+      var progress = Math.min(1, (ts-startTime)/duration);
+      var eased = 1 - Math.pow(1-progress, 3);
+      el.textContent = Math.round(start + (target-start)*eased).toLocaleString();
+      if (progress < 1) requestAnimationFrame(step); else el.textContent = target.toLocaleString();
+    }
+    requestAnimationFrame(step);
+  });
+}
+var statsSection = document.getElementById("stats");
+if ("IntersectionObserver" in window){
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){ if (entry.isIntersecting) animateStats(); });
+  }, {threshold:0.4});
+  io.observe(statsSection);
+} else { animateStats(); }
+
+/* ======================= LOADING SCREEN ======================= */
+var loadBar = document.getElementById("load-bar");
+var loadLabel = document.getElementById("load-label");
+var progress = 0;
+var loadInterval = setInterval(function(){
+  progress += 8 + Math.random()*14;
+  if (progress >= 100){
+    progress = 100;
+    clearInterval(loadInterval);
+    setTimeout(function(){
+      document.getElementById("loading-screen").classList.add("hidden");
+    }, 250);
+  }
+  loadBar.style.width = progress+"%";
+  loadLabel.textContent = (t("loading")||"Building the city…")+" "+Math.floor(progress)+"%";
+}, 140);
+
+/* ======================= ANIMATION LOOP ======================= */
+var clock = new THREE.Clock();
+function animateFrame(){
+  requestAnimationFrame(animateFrame);
+  var dt = Math.min(clock.getDelta(), 0.1);
+
+  if (playing){
+    currentHour += dt * speedMultiplier * 0.35;
+    if (currentHour > 24){ currentHour = 6; }
+    slider.value = currentHour;
+    updatePhaseLabel();
+  }
+  updateEnvironment(currentHour);
+
+  // cars
+  var half = citySpan/2;
+  cars.forEach(function(c){
+    c.t += c.speed*c.dir*dt;
+    if (c.t > half) c.t = -half;
+    if (c.t < -half) c.t = half;
+    if (c.horizontal){
+      c.mesh.position.set(c.t, 0, c.lane + (c.dir>0?0.9:-0.9));
+      c.mesh.rotation.y = c.dir>0 ? Math.PI/2 : -Math.PI/2;
+    } else {
+      c.mesh.position.set(c.lane + (c.dir>0?-0.9:0.9), 0, c.t);
+      c.mesh.rotation.y = c.dir>0 ? 0 : Math.PI;
+    }
+    var carLight = c.mesh.children[2];
+    if (carLight) carLight.material.emissiveIntensity = (currentHour>=18.5||currentHour<6.2) ? 1.4 : 0.15;
+  });
+
+  // pedestrians
+  pedestrians.forEach(function(p){
+    p.t += p.speed*p.dir*dt;
+    if (p.t > half) p.t = -half;
+    if (p.t < -half) p.t = half;
+    if (p.horizontal){
+      p.mesh.position.set(p.t, 0, p.lane);
+      p.mesh.rotation.y = p.dir>0 ? Math.PI/2 : -Math.PI/2;
+    } else {
+      p.mesh.position.set(p.lane, 0, p.t);
+      p.mesh.rotation.y = p.dir>0 ? 0 : Math.PI;
+    }
+  });
+
+  // traffic lights cycle (~8s cycle)
+  var cycle = (performance.now()/1000) % 8;
+  trafficLights.forEach(function(tl){
+    var local = (cycle + tl.offset) % 8;
+    var state = local < 3.5 ? "green" : local < 4.5 ? "yellow" : "red";
+    tl.red.material.emissiveIntensity = state==="red" ? 1 : 0.05;
+    tl.yellow.material.emissiveIntensity = state==="yellow" ? 1 : 0.05;
+    tl.green.material.emissiveIntensity = state==="green" ? 1 : 0.05;
+  });
+
+  // rain fall
+  if (rain.visible){
+    var posAttr = rain.geometry.attributes.position;
+    for (var i=0;i<rainCount;i++){
+      var y = posAttr.getY(i) - dt*28;
+      if (y < 0) y = 40;
+      posAttr.setY(i, y);
+    }
+    posAttr.needsUpdate = true;
+  }
+
+  controls.update();
+  renderer.render(scene, camera);
+}
+
+/* Initial sizing + first paint */
+function boot(){
+  resize();
+  updatePhaseLabel();
+  updateEnvironment(currentHour);
+  animateFrame();
+}
+boot();
+
+/* Touch support note: OrbitControls handles single-touch rotate / pinch zoom / two-finger pan by default. */
+})();
+</script>
+</body>
+</html>
